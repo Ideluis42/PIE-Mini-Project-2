@@ -105,27 +105,49 @@ void scanning() {
   if (state != prior_state) {
     prior_state = state;
     calculate_bounding_box();
-    // Move to top left to begin scanning
   }
-  // Scanning code in grid
-  for (float i=-scanning_width_angle; i <= scanning_width_angle; i+=0.01) {
-    pan_servo.write(i+90);
-    //Serial.println(i);
-    delay(1);
-  }
-  for (float i=-scanning_height_upper_angle; i <= scanning_height_lower_angle; i+=0.01) {
-    tilt_servo.write(i+90);
-    //Serial.println(i);
-    delay(1);
-  }
+  int current_mesh_points_x = 0;
+  int current_mesh_points_y = 0;
+  current_time = millis();
+  set_position(45,45);
+  delay(1000);
+  set_position(45,-45);
+  delay(1000);
+  set_position(-45,-45);
+  delay(1000);
+  set_position(-45,45);
+  delay(1000);
+  
+//  if (current_time >= prior_time + scanning_interval) {
+//    
+//  }
+  
+//  // Scanning code in grid
+//  for (float i=-scanning_width_angle; i <= scanning_width_angle; i+=0.01) {
+//    pan_servo.write(i+90);
+//    //Serial.println(i);
+//    delay(1);
+//  }
+//  for (float i=-scanning_height_upper_angle; i <= scanning_height_lower_angle; i+=0.01) {
+//    tilt_servo.write(i+90);
+//    //Serial.println(i);
+//    delay(1);
+//  }
+
 
   // Return servo positions to zero upon state exit
   pan_servo.write(90);
   tilt_servo.write(90);
-  state = IDLE;
+  //state = IDLE;
 }
 
 //void scan_width(bool ) {
+
+void set_position(float x, float y) {
+  // Set the absolute position of the sensor in the angular domain
+  pan_servo.write(90-x);
+  tilt_servo.write(90-y);
+}
 
 void setup() {
   Serial.begin(9600);
