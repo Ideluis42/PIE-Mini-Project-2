@@ -1,7 +1,8 @@
 // 3D scanner firmware for ENGR2110 using two servos and an infrared distance
 // sensor. A finite state machine is used to control the state of the scanner and 
 // To Do:
-// Calculate x and y distance
+// Calculate x and y distance (pre sent parameters for how many points,
+// but will need to troubleshoot
 // Create vectors/arrays to store x,y points
 // Send arrays to matlab
 
@@ -9,6 +10,11 @@
 #include <math.h>
 Servo pan_servo;  // create servo object for the pan servo
 Servo tilt_servo; // create servo object for the tilt servo
+
+// Arrays to store calculated x and y distance of number
+int points_measured = 0; // to change when we know how many points to take
+float x_distances[points_measured];
+float y_distances[points_measured];
 
 const uint8_t RED_LED = 5;
 const uint8_t GREEN_LED = 6;
@@ -146,7 +152,8 @@ void scanning() {
         sensorValue = analogRead(INFRARED_SENSOR);
         voltage = sensorValue * (5.0 / 1023.0);
         distance = log((voltage - 0.5)/4)/(-3.5);
-        // save distance in vector/array/something
+        // calculate distance on xy plane
+        // save distance in x_distance and y_distance
         current_mesh_points_x += 1;
         if ((current_mesh_points_y % 2) == 0) {
           x_position += scanning_width_total_angle/mesh_points_x;
@@ -164,7 +171,8 @@ void scanning() {
         sensorValue = analogRead(INFRARED_SENSOR);
         voltage = sensorValue * (5.0 / 1023.0);
         distance = log((voltage - 0.5)/4)/(-3.5);
-        // save distance in vector/array/something
+        // calculate distance on xy plane
+        // save distance in x_distance and y_distance
         current_mesh_points_y += 1;
         current_mesh_points_x = 0;
       }
