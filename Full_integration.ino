@@ -54,8 +54,10 @@ const uint8_t mesh_points_x = 25; //
 const uint8_t mesh_points_y = 25; //
 
 int sensor_value = 0;
+float total_measured_distances = 0;
 float distance = 0;
 float voltage = 0;
+int scan_count = 0;
 
 // Define states for the 3D scanner
 enum states {
@@ -149,9 +151,16 @@ void scanning() {
       if (current_time >= prior_time + scanning_interval) {
         prior_time = current_time;
         // Scanning:
-        sensorValue = analogRead(INFRARED_SENSOR);
-        voltage = sensorValue * (5.0 / 1023.0);
-        distance = log((voltage - 0.5)/4)/(-3.5);
+        // can change num of scans per distance, but 50 is a good place to start
+        while scan_count < 50{
+          sensorValue = analogRead(INFRARED_SENSOR);
+          voltage = sensorValue * (5.0 / 1023.0);
+          total_distance += log((voltage - 0.5)/4)/(-3.5);
+          scan_count++;
+          }
+        distance = total_distance/50;
+        scan_count = 0;
+        
         // calculate distance on xy plane
         // save distance in x_distance and y_distance
         current_mesh_points_x += 1;
@@ -168,9 +177,14 @@ void scanning() {
         y_position -= scanning_height_total_angle/mesh_points_y;
         set_position(x_position, y_position);
         //scanning:
-        sensorValue = analogRead(INFRARED_SENSOR);
-        voltage = sensorValue * (5.0 / 1023.0);
-        distance = log((voltage - 0.5)/4)/(-3.5);
+        while scan_count < 50{
+          sensorValue = analogRead(INFRARED_SENSOR);
+          voltage = sensorValue * (5.0 / 1023.0);
+          total_distance += log((voltage - 0.5)/4)/(-3.5);
+          scan_count++;
+          }
+        distance = total_distance/50;
+        scan_count = 0;
         // calculate distance on xy plane
         // save distance in x_distance and y_distance
         current_mesh_points_y += 1;
