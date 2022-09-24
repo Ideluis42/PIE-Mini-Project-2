@@ -73,6 +73,12 @@ void calculate_bounding_box() {
   Serial.println(scanning_height_upper_angle);
 }
 
+float calculate_sensor_surface_distance(float pan_angle, float tilt_angle) {
+  float x_distance = scanner_distance*tan(pan_angle);
+  float y_distance = scanner_distance*tan(tilt_angle);
+  return sqrt(pow(x_distance,2) + pow(y_distance,2) + pow(scanner_distance,2));
+}
+
 void idle() {
   // Initialization for scanning state
   if (state != prior_state) {
@@ -135,6 +141,8 @@ void scanning() {
       if (current_time >= prior_time + scanning_interval) {
         prior_time = current_time;
         // SCAN HERE!
+        float distance = calculate_sensor_surface_distance(x_position, y_position);
+        Serial.println(distance);
         current_mesh_points_x += 1;
         if ((current_mesh_points_y % 2) == 0) {
           x_position += scanning_width_total_angle/mesh_points_x;
