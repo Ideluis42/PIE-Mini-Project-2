@@ -1,18 +1,36 @@
 // 3D scanner firmware for ENGR2110 using two servos and an infrared distance
 // sensor. A finite state machine is used to control the state of the scanner and 
 
+// To Do:
+// Calculate x and y distance (pre sent parameters for how many points,
+// but will need to troubleshoot
+// Create vectors/arrays to store x,y points
+// Send arrays to matlab
+
 #include <Servo.h>
 #include <math.h>
 Servo pan_servo;  // create servo object for the pan servo
 Servo tilt_servo; // create servo object for the tilt servo
 
-const uint8_t RED_LED = 5;
-const uint8_t GREEN_LED = 6;
-const uint8_t YELLOW_LED = 11;
-const uint8_t TILT_SERVO = 9;
+// Arrays to store calculated x and y distance of number
+const int points_measured = 9; // to change when we know how many points to take
+float x_distances[points_measured];
+float y_distances[points_measured];
+
+int sensor_value = 0;
+float total_measured_distances = 0;
+float distance = 0;
+float voltage = 0;
+int scan_count = 0;
+float total_distance;
+
+const uint8_t RED_LED = 3;
+const uint8_t GREEN_LED = 5;
+const uint8_t YELLOW_LED = 6;
+const uint8_t TILT_SERVO = 11;
 const uint8_t PAN_SERVO = 10;
-const uint8_t INFRARED_SENSOR = 0;
-const uint8_t SWITCH1 = 8;
+const uint8_t INFRARED_SENSOR = A0;
+const uint8_t SWITCH1 = 7;
 uint32_t current_time;
 uint32_t last_button_read;
 bool debounce_flag;
@@ -21,12 +39,12 @@ float t = 0;
 float out;
 
 // User parameters of the 3D scanner and letter
-const float scanner_distance = 0.4; // Distance from the sensor to the letter (m)
+const float scanner_distance = 0.25; // Distance from the sensor to the letter (m)
 const float sensor_height = 0.1; // Distance from the sensor to the ground (m)
-const float letter_height = 0.3556; // Height of the letter to be scanned (m)
-const float letter_width = 0.2286; // Width of the letter to be scanned (m)
-const float letter_tolerance = 0.05; // Tolerance to measure to the sides of the letter (m)
-const uint16_t scanning_interval = 10; // Interval to wait between servo moves and scans (milliseconds)
+const float letter_height = 0.10; // Height of the letter to be scanned (m)
+const float letter_width = 0.10; // Width of the letter to be scanned (m)
+const float letter_tolerance = 0.1; // Tolerance to measure to the sides of the letter (m)
+const uint16_t scanning_interval = 17; // Interval to wait between servo moves and scans (milliseconds)
 const uint16_t DEBOUNCE_INTERVAL = 1; // Minimum interval to wait before checking button presses 
 float scanning_width_angle; // 
 float scanning_height_lower_angle; //
@@ -42,6 +60,13 @@ int current_mesh_points_y;
 // const uint8_t scanning_resolution = 1; // Angular resolution of the scanner (degrees) //TODO: Delete if unused
 const uint8_t mesh_points_x = 25; //
 const uint8_t mesh_points_y = 25; //
+
+// Structure to hold x,y,z data from sensor
+struct coordinates{
+  float x;
+  float y;
+  float z;
+};
 
 // Define states for the 3D scanner
 enum states {
@@ -131,19 +156,37 @@ void scanning() {
     current_mesh_points_x = 0;
     current_mesh_points_y = 0;
     set_position(x_position,y_position);
+    delay(1000);
   }
   current_time = millis();
 //  Serial.print(current_mesh_points_x);
 //  Serial.print("\t");
 //  Serial.println(current_mesh_points_y);
-  if (current_mesh_points_y <= mesh_points_y) {
+  if (current_mesh_points_y <= mesh_points_y-1) {
     if (current_mesh_points_x < mesh_points_x-1) {
       if (current_time >= prior_time + scanning_interval) {
         prior_time = current_time;
-        // SCAN HERE!
-        float distance = calculate_sensor_surface_distance(x_position, y_position);
+        // Scanning:
+        // can change num of scans per distance, but 50 is a good place to start
+        float absolute_distance = calculate_sensor_surface_distance(x_position, y_position);
+        while (scan_count < 10) {
+          sensor_value = analogRead(INFRARED_SENSOR);
+          voltage = sensor_value * (5.0 / 1023.0);
+          total_distance += log((voltage - 0.5)/4)/(-3.5);
+          //Serial.println(total_distance);
+          scan_count++;
+          }
+        float x_distance = total_distance/10 - absolute_distance + scanner_distance;
+        total_distance = 0;
+        Serial.print(x_distance);
+        Serial.print(", ");
+        
+        scan_count = 0;
+        
+        // calculate distance on xy plane
+        // save distance in x_distance and y_distance
         //Serial.println(x_position);
-        Serial.println(distance);
+        //Serial.println(distance);
         current_mesh_points_x += 1;
         if ((current_mesh_points_y % 2) == 0) {
           x_position += scanning_width_total_angle/mesh_points_x;
@@ -174,7 +217,7 @@ void scanning() {
 //void scan_width(bool ) {
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(250000);
   
   // Define servos, inputs, and outputs
   pan_servo.attach(PAN_SERVO);
@@ -185,7 +228,7 @@ void setup() {
   pinMode(SWITCH1, INPUT);
 
   prior_state = NONE;
-  state = SCANNING; //TODO: Change to "IDLE" upon code completion
+  state = IDLE; //TODO: Change to "IDLE" upon code completion
 
   last_button_read  = 0; // Last time the button was read as pressed. Set to 0 on setup. #TODO: Confirm if variable def this way good practice
   prior_time = 0;
