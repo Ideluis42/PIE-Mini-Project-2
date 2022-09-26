@@ -39,12 +39,12 @@ float t = 0;
 float out;
 
 // User parameters of the 3D scanner and letter
-const float scanner_distance = 0.25; // Distance from the sensor to the letter (m)
-const float sensor_height = 0.1; // Distance from the sensor to the ground (m)
-const float letter_height = 0.10; // Height of the letter to be scanned (m)
-const float letter_width = 0.10; // Width of the letter to be scanned (m)
+const float scanner_distance = 0.35; // Distance from the sensor to the letter (m)
+const float sensor_height = 0.16; // Distance from the sensor to the ground (m)
+const float letter_height = 0.359; // Height of the letter to be scanned (m)
+const float letter_width = 0.23; // Width of the letter to be scanned (m)
 const float letter_tolerance = 0.1; // Tolerance to measure to the sides of the letter (m)
-const uint16_t scanning_interval = 17; // Interval to wait between servo moves and scans (milliseconds)
+const uint16_t scanning_interval = 4; // Interval to wait between servo moves and scans (milliseconds)
 const uint16_t DEBOUNCE_INTERVAL = 1; // Minimum interval to wait before checking button presses 
 float scanning_width_angle; // 
 float scanning_height_lower_angle; //
@@ -58,8 +58,8 @@ int current_mesh_points_y;
 
 // User settings of the 3D scanner
 // const uint8_t scanning_resolution = 1; // Angular resolution of the scanner (degrees) //TODO: Delete if unused
-const uint8_t mesh_points_x = 25; //
-const uint8_t mesh_points_y = 25; //
+const uint8_t mesh_points_x = 100; //
+const uint8_t mesh_points_y = 100; //
 
 // Structure to hold x,y,z data from sensor
 struct coordinates{
@@ -67,6 +67,8 @@ struct coordinates{
   float y;
   float z;
 };
+
+coordinates scan = {0, 0, 0};
 
 // Define states for the 3D scanner
 enum states {
@@ -93,15 +95,15 @@ void calculate_bounding_box() {
   scanning_height_upper_angle = (180*atan((letter_height - sensor_height + letter_tolerance)/scanner_distance))/PI;
   scanning_width_total_angle = scanning_width_angle*2;
   scanning_height_total_angle = scanning_height_upper_angle + scanning_height_lower_angle;
-  Serial.println(scanning_width_angle);
-  Serial.println(scanning_height_lower_angle);
-  Serial.println(scanning_height_upper_angle);
+//  Serial.println(scanning_width_angle);
+//  Serial.println(scanning_height_lower_angle);
+//  Serial.println(scanning_height_upper_angle);
 }
 
-float calculate_sensor_surface_distance(float pan_angle, float tilt_angle) {
-  float x_distance = scanner_distance*tan((PI*pan_angle)/180);
-  float y_distance = scanner_distance*tan((PI*tilt_angle)/180);
-  return sqrt(pow(x_distance,2) + pow(y_distance,2) + pow(scanner_distance,2));
+void calculate_scan_coordinates(float pan_angle, float tilt_angle) {
+  scan.y = scanner_distance*tan((PI*pan_angle)/180);
+  scan.z = scanner_distance*tan((PI*tilt_angle)/180);
+  scan.x = sqrt(pow(scan.y,2) + pow(scan.z,2) + pow(scanner_distance,2));
 }
 
 void idle() {
@@ -156,7 +158,10 @@ void scanning() {
     current_mesh_points_x = 0;
     current_mesh_points_y = 0;
     set_position(x_position,y_position);
-    delay(1000);
+    delay(300);
+    scan_point();
+    current_mesh_points_x += 1;
+    x_position += scanning_width_total_angle/mesh_points_x;
   }
   current_time = millis();
 //  Serial.print(current_mesh_points_x);
@@ -166,23 +171,10 @@ void scanning() {
     if (current_mesh_points_x < mesh_points_x-1) {
       if (current_time >= prior_time + scanning_interval) {
         prior_time = current_time;
+        set_position(x_position, y_position);
         // Scanning:
         // can change num of scans per distance, but 50 is a good place to start
-        float absolute_distance = calculate_sensor_surface_distance(x_position, y_position);
-        while (scan_count < 10) {
-          sensor_value = analogRead(INFRARED_SENSOR);
-          voltage = sensor_value * (5.0 / 1023.0);
-          total_distance += log((voltage - 0.5)/4)/(-3.5);
-          //Serial.println(total_distance);
-          scan_count++;
-          }
-        float x_distance = total_distance/10 - absolute_distance + scanner_distance;
-        total_distance = 0;
-        Serial.print(x_distance);
-        Serial.print(", ");
-        
-        scan_count = 0;
-        
+        scan_point();
         // calculate distance on xy plane
         // save distance in x_distance and y_distance
         //Serial.println(x_position);
@@ -193,15 +185,14 @@ void scanning() {
         } else {
           x_position -= scanning_width_total_angle/mesh_points_x;
         }
-        set_position(x_position, y_position);
       }
     } else {
       if (current_time >= prior_time + scanning_interval) {
         prior_time = current_time;
-        y_position -= scanning_height_total_angle/mesh_points_y;
         set_position(x_position, y_position);
-        // SCAN HERE!
-        float distance = calculate_sensor_surface_distance(x_position, y_position);
+        scan_point();
+        //calculate_scan_coordinates(x_position, y_position);
+        y_position -= scanning_height_total_angle/mesh_points_y;
         current_mesh_points_y += 1;
         current_mesh_points_x = 0;
       }
@@ -214,7 +205,28 @@ void scanning() {
   }
 }
 
-//void scan_width(bool ) {
+void scan_point() {
+  calculate_scan_coordinates(x_position, y_position);
+  while (scan_count < 10) {
+    sensor_value = analogRead(INFRARED_SENSOR);
+    voltage = sensor_value * (5.0 / 1023.0);
+    total_distance += log((voltage - 0.5)/4)/(-3.5);
+    //Serial.println(total_distance);
+    scan_count++;
+  }
+  scan.x = total_distance/10 - scan.x + scanner_distance;
+  total_distance = 0;
+  scan_count = 0;
+  Serial.print(scan.x);
+  Serial.print(", ");
+  Serial.print(scan.y);
+  Serial.print(", ");
+  Serial.println(scan.z);
+  //Serial.print(", ");
+  //Serial.print(current_mesh_points_x);
+  //Serial.print(", ");
+  //Serial.println(current_mesh_points_y);
+}
 
 void setup() {
   Serial.begin(250000);
