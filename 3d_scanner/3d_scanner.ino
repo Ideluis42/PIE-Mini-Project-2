@@ -42,16 +42,15 @@ int current_mesh_points_x; // Current number of mesh points measured in x
 int current_mesh_points_y; // Current number of mesh points measured in y
 
 // User settings of the 3D scanner
-// const uint8_t scanning_resolution = 1; // Angular resolution of the scanner (degrees) //TODO: Delete if unused
 const uint8_t mesh_points_x = 100; // Number of mesh points to measure in x
 const uint8_t mesh_points_y = 100; // Number of mesh points to measure in y
-int scan_count = 10; // Number of sensor measurements to take per mesh point
-const float scanner_distance = 0.35; // Distance from the sensor to the letter (m)
-const float sensor_height = 0.16; // Distance from the sensor to the ground (m)
+int scan_count = 0; // Counter of sensor measurements taken per point
+const float scanner_distance = 0.32; // Distance from the sensor to the letter (m)
+const float sensor_height = 0.25; // Distance from the sensor to the ground (m)
 const float letter_height = 0.359; // Height of the letter to be scanned (m)
 const float letter_width = 0.23; // Width of the letter to be scanned (m)
 const float letter_tolerance = 0.1; // Tolerance to measure to the sides of the letter (m)
-const uint16_t scanning_interval = 4; // Interval to wait between servo moves and scans (milliseconds)
+const uint16_t scanning_interval = 300; // Interval to wait between servo moves and scans (milliseconds)
 
 // Structure to hold data from sensor converted to x,y,z, coordinates
 struct coordinates{
@@ -188,7 +187,7 @@ void scanning() {
 void scan_point() {
   // Scan and print data converted into x,y,z coordinates
   calculate_scan_coordinates(x_angle, y_angle);
-  while (scan_count < scan_count) {
+  while (scan_count < 10) {
     sensor_value = analogRead(INFRARED_SENSOR);
     voltage = sensor_value * (5.0 / 1023.0);
     total_distance += log((voltage - 0.5)/4)/(-3.5);
