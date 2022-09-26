@@ -44,7 +44,7 @@ const float sensor_height = 0.16; // Distance from the sensor to the ground (m)
 const float letter_height = 0.359; // Height of the letter to be scanned (m)
 const float letter_width = 0.23; // Width of the letter to be scanned (m)
 const float letter_tolerance = 0.1; // Tolerance to measure to the sides of the letter (m)
-const uint16_t scanning_interval = 4; // Interval to wait between servo moves and scans (milliseconds)
+const uint16_t scanning_interval = 100; // Interval to wait between servo moves and scans (milliseconds)
 const uint16_t DEBOUNCE_INTERVAL = 1; // Minimum interval to wait before checking button presses 
 float scanning_width_angle; // 
 float scanning_height_lower_angle; //
@@ -58,8 +58,8 @@ int current_mesh_points_y;
 
 // User settings of the 3D scanner
 // const uint8_t scanning_resolution = 1; // Angular resolution of the scanner (degrees) //TODO: Delete if unused
-const uint8_t mesh_points_x = 100; //
-const uint8_t mesh_points_y = 100; //
+const uint8_t mesh_points_x = 50; //
+const uint8_t mesh_points_y = 50; //
 
 // Structure to hold x,y,z data from sensor
 struct coordinates{
@@ -207,7 +207,7 @@ void scanning() {
 
 void scan_point() {
   calculate_scan_coordinates(x_position, y_position);
-  while (scan_count < 10) {
+  while (scan_count < 1) {
     sensor_value = analogRead(INFRARED_SENSOR);
     voltage = sensor_value * (5.0 / 1023.0);
     total_distance += log((voltage - 0.5)/4)/(-3.5);
