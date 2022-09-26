@@ -8,7 +8,7 @@ port = "COM7"; % change if different port
 arduinoObj = serialport(port, 250000);
 
 fopen(arduinoObj);
-points_sent = 25*25;
+points_sent = 50*50;
 
 % arrays to hold points
 x_distances = zeros(0, points_sent);
@@ -28,11 +28,10 @@ while count < points_sent
 
 end
 
-% need to do a mesh map with color based on dist.
-figure(1); hold on; grid on;
-scatter3(x_distances, y_distances, z_distances, "filled");
+figure(1); hold on; grid on; clf;
+
+scatter(y_distances, z_distances, 30, x_distances, "filled");
+colorbar
 title("3-D Scan of a Number 2");
 xlabel("x distance from scanner [m]");
 ylabel("y distance from scanner [m]");
-zlabel("z distance from scanner [m]");
-view(-30, 10)
