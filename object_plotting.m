@@ -1,20 +1,38 @@
+%%
 clear all; clc; % clear old variables
 
 %delete(instrfind({'Port'},{'COM5'}));
-port = "COM5"; % change if different port
+port = "COM7"; % change if different port
 
 % find the arduino and get the baudrate
-arduinoObj = serialport(port, 9600);
+arduinoObj = serialport(port, 250000);
 
 fopen(arduinoObj);
-x_distances = zeros(1, 10);
-y_distances = zeros(1, 10);
-theta = 0; % to be replaced with servo angle
+points_sent = 25*25;
+
+% arrays to hold points
+x_distances = zeros(0, points_sent);
+y_distances = zeros(0, points_sent);
+z_distances = zeros(0, points_sent);
 
 count = 1;
-while count < 11
-    distance = fscanf(arduinoObj, "%f");
-    x_distances(count) = distance*cosd(theta);
-    y_distances(count) = distance*sind(theta);
+% 2-D visualization
+while count < points_sent
+   
+    distances = fscanf(arduinoObj, "%s");
+    temp_dist_array = str2num(distances);
+    x_distances(count) = temp_dist_array(1);
+    y_distances(count) = temp_dist_array(2);
+    z_distances(count) = temp_dist_array(3);
     count = count + 1;
+
 end
+
+% need to do a mesh map with color based on dist.
+figure(1); hold on; grid on;
+scatter3(x_distances, y_distances, z_distances, "filled");
+title("3-D Scan of a Number 2");
+xlabel("x distance from scanner [m]");
+ylabel("y distance from scanner [m]");
+zlabel("z distance from scanner [m]");
+view(-30, 10)
